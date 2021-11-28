@@ -1,0 +1,106 @@
+import numpy as np
+from numpy import random
+from numpy.linalg import matrix_power
+from numpy import linalg as LA
+import matplotlib.pyplot as plt
+from sympy.utilities.iterables import multiset_permutations
+import warnings
+from math import sqrt
+import scipy
+
+################################################################################################################################################################
+#Function to check if matrices commute, assuming product is defined
+def commutator(X,Y):
+
+  M = np.zeros(shape=(X.shape[0],Y.shape[1]))
+
+  for i in range(0,X.shape[0]):
+    for j in range(0,Y.shape[1]):
+      M[i][j] = np.matmul(Y,X)[i][j] - np.matmul(X,Y)[i][j]
+
+      if M[i][j] != 0:
+        return "matrices do NOT commute..."
+  
+  return "matrices commute!"
+  
+################################################################################################################################################################
+#Function gives three dimensional array, that can be thought of as the following: there are 100 columns corresponding to values of t between 1 and 100; for each
+#fixed value of t we have a correspondinding sequence of one hundred rows for each value of k between 1 to 100 (these 100 values of k are data points that
+#represent the curve drawn by increasing the coefficient of the third matrix in our convex combination); each entry in the matrix described previsouly (with
+#rows and coumns indexed by k and t) is a vector, whose size is the number of eigenvalues in convex_combination.
+
+def eigval_mat_three(A,B,C):
+
+  convex_combination = np.zeros(shape=(A.shape[0], A.shape[1])) #This matrix will be the convex combination of A, B and C, where the coefficients are parameters depending on t and k. A, B and C must be of same size in order to proceed using the size of A by default
+  eigvals_mat = np.zeros(shape=(100, 100, convex_combination.shape[1]), dtype = np.complex64)
+  
+  for t in range(0, 100):  #When dealing with larger dimensions, four for loops may be a bit much for runtime
+    for k in range(0, 100):
+      for i in range(0,A.shape[0]):
+        for j in range(0,A.shape[1]):
+          convex_combination[i][j] = (1-k*.01)*(t*.01)*A[i][j] + (1-k*.01)*(1-t*.01)*B[i][j] + (k*.01)*C[i][j]
+          
+      eigvals,eigvecs = LA.eig(convex_combination)
+      
+      for i in range(0,A.shape[1]): #This is assuming there are as many eigenvalues as there are columns in convex_combination
+        eigvals_mat[t][k][i] = eigvals[i]
+
+  return eigval_mat
+
+################################################################################################################################################################
+#Function plots the curve derived from the 100 points that are the q^th set of eigenvalues (of the n possible eigenvalues, so q leq n) at some fixed t and q, 
+#runs from 1 to 100 (real parts on x axis and imaginary parts of y axis). It is intended that this function is used in conjuction with the previous and 
+#D = eigvals_mat(A,B,C)
+
+def eigplot_three(D,t,q):
+
+  for k in range(0,25):
+      plt.scatter(np.real(D[t,k,q]), np.imag(D[t,k,q]), c = "red", s=1, marker = ".")
+
+  for k in range(26,50):
+      plt.scatter(np.real(D[t,k,q]), np.imag(D[t,k,q]), c = "blue", s=1, marker = ".")
+
+  for k in range(51,75):
+      plt.scatter(np.real(D[t,k,q]), np.imag(D[t,k,q]), c = "green", s=1, marker = ".")
+
+  for k in range(76,100):
+      plt.scatter(np.real(D[t,k,q]), np.imag(D[t,k,q]), c = "black", s=1, marker = ".")
+
+################################################################################################################################################################
+#Function gives two dimensional array, that gives data on the eigenvectors on convex combination of permutation matrices
+
+def eigvec(A,B):
+
+  convex_combination = np.zeros(shape=(A.shape[0], A.shape[1])) #This matrix will be the convex combination of A, B and C, where the coefficients are parameters depending on t and k. A, B and C must be of same size in order to proceed using the size of A by default
+  eigvec_mat = np.zeros(shape=(100, convex_combination.shape[1], convex_combination.shape[0]), dtype = np.complex64)
+  
+  for t in range(0, 100):
+      for i in range(0,A.shape[0]):
+        for j in range(0,A.shape[1]):
+          convex_combination[i][j] = (t*.01)*A[i][j] + (1-t*.01)*B[i][j]
+         
+      eigvals,eigvecs = LA.eig(convex_combination)
+      
+      for i in range(0,A.shape[1]): #This is assuming there are as many eigenvalues as there are columns in convex_combination
+          eigvec_mat[t][i] = eigvecs[i]
+          
+  return eigvec_mat
+
+################################################################################################################################################################
+#Functions plot q^th set of complex eigenvectors according to its cartesian and polar coordinates respectively
+
+def eigvecplot_cartesian(D,q):
+
+  for t in range(0,100):
+      plt.scatter(np.real(D[t,q]), np.imag(D[t,q]), c = "red", s=1, marker = ".")
+
+def eigvecplot_polar(D,q):
+
+  for t in range(0,100):
+    for j in range(D.shape[1]):
+      plt.scatter(sqrt(np.real(D[t,q,j])**2+np.imag(D[t,q,j])**2), np.angle(D[t,q,j]), c = "blue", s=1, marker = ".")
+
+
+
+
+
